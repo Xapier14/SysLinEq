@@ -89,8 +89,8 @@ public:
 	void SwapRow(int row1, int row2);
 	// Multiplies a row by a non-zero scalar.
 	void MultiplyByScalar(int rowIndex, double scalar);
-	// Adds a scalar-multiple of a row onto another row.
-	void AddInverse(int originRow, int multipleRow, double scalar);
+	// Adds a row to another row.
+	void AddRow(int baseRow, int additiveRow, bool inverseAdditive);
 
 	// Static functions.
 	

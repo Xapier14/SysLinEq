@@ -422,3 +422,38 @@ void Matrix::SwapRow(int row1, int row2) {
 		r1->Data[i]->Value = temp[i];
 	}
 }
+
+void Matrix::MultiplyByScalar(int rowIndex, double scalar) {
+	// Range check.
+	if (rowIndex < 0 || rowIndex > _rows) throw new exception("Row index is out-of-range.");
+
+	// Get the row to work on.
+	Row* base = GetRow(rowIndex);
+
+	// For each cell, multiply by scalar.
+	for (int i = 0; i < base->Length; ++i) {
+		base->Data[i]->Value *= scalar;
+	}
+}
+
+void Matrix::AddRow(int baseRow, int additiveRow, bool inverseAdditive) {
+	// Range check.
+	if (baseRow < 0 || baseRow > _rows) throw new exception("Base row index is out-of-range.");
+	if (additiveRow < 0 || additiveRow > _rows) throw new exception("Additive row index is out-of-range.");
+
+	// Get the rows to work with.
+	Row* base = GetRow(baseRow);
+	Row* additive = GetRow(additiveRow);
+
+	// For each cell, add the additive to the base
+	for (int c = 0; c < base->Length; ++c) {
+		if (!inverseAdditive) {
+			// Addition
+			base->Data[c]->Value += additive->Data[c]->Value;
+		}
+		else {
+			// Subtract (Additive inverse)
+			base->Data[c]->Value -= additive->Data[c]->Value;
+		}
+	}
+}
