@@ -10,7 +10,7 @@ int main()
 {
 	//Matrix* mat = Matrix::CreateMatrix(3, 3, true);
 
-	Matrix* mat = new Matrix(3, 3, true);
+	Matrix* mat = new Matrix(3, 4, true);
 
 	set_max_decimal(3);
 
@@ -27,12 +27,15 @@ int main()
 	mat->SetValue(0, 0, 0);
 	mat->SetValue(0, 1, 6);
 	mat->SetValue(0, 2, 3);
+	mat->SetValue(0, 3, 7);
 	mat->SetValue(1, 0, 1);
 	mat->SetValue(1, 1, 2);
 	mat->SetValue(1, 2, 5);
+	mat->SetValue(1, 3, 10);
 	mat->SetValue(2, 0, 1);
 	mat->SetValue(2, 1, 8);
 	mat->SetValue(2, 2, 9);
+	mat->SetValue(2, 3, 12);
 	
 	mat->PrintMatrix();
 
@@ -50,9 +53,9 @@ int main()
 	}
 	*/
 
-	Algorithm::Rearrange(mat, 0, 0);
+	Matrix* result = Algorithm::Solve(mat, false);
 
-	mat->PrintMatrix();
+	result->PrintMatrix();
 
 	cout << "";
 

@@ -8,7 +8,7 @@ using namespace std;
 class Algorithm {
 public:
 	// An implementation of the Gauss-Jordan Elimination Algorithm
-	static void Solve(Matrix* matrix, Matrix* outResult, bool printStep);
+	static Matrix* Solve(Matrix* matrix, bool printStep);
 	static bool CheckPivot(Matrix* matrix, int rowIndex, int colIndex);
 	static bool CheckReduced(Matrix* matrix, int rowIndex, int colIndex);
 	static void PrintSwapped(Matrix* before, Matrix* after);

@@ -90,7 +90,7 @@ public:
 	// Multiplies a row by a non-zero scalar.
 	void MultiplyByScalar(int rowIndex, double scalar);
 	// Adds a row to another row.
-	void AddRow(int baseRow, int additiveRow, bool inverseAdditive);
+	void AddRow(int baseRow, int additiveRow, bool inverseAdditive = false, double scalar = 1);
 
 	// Static functions.
 	

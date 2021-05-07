@@ -199,7 +199,7 @@ Matrix::Matrix(int rows, int columns, bool isAugmented) {
 	}
 
 	//init columns
-	for (int i = 0; i < _rows; ++i) {
+	for (int i = 0; i < _columns; ++i) {
 		//create a new instance of our column class
 		Column* cl = new Column();
 
@@ -325,15 +325,15 @@ Row* Matrix::GetRow(int rowIndex) {
 }
 
 Column* Matrix::GetColumn(int columnIndex) {
-	if (columnIndex < 0 || columnIndex >= _rows) throw new exception("Column index out-of-range.");
+	if (columnIndex < 0 || columnIndex >= _columns) throw new exception("Column index out-of-range.");
 	return _dataColumns[columnIndex];
 }
 void Matrix::SetValue(int rowIndex, int columnIndex, double val) {
-	if (columnIndex < 0 || columnIndex >= _rows || rowIndex < 0 || rowIndex >= _rows) throw new exception("Index out-of-range.");
+	if (columnIndex < 0 || columnIndex >= _columns || rowIndex < 0 || rowIndex >= _rows) throw new exception("Index out-of-range.");
 	_dataRows[rowIndex]->Data[columnIndex]->Value = val;
 }
 double Matrix::GetValue(int rowIndex, int columnIndex) {
-	if (columnIndex < 0 || columnIndex >= _rows || rowIndex < 0 || rowIndex >= _rows) throw new exception("Index out-of-range.");
+	if (columnIndex < 0 || columnIndex >= _columns || rowIndex < 0 || rowIndex >= _rows) throw new exception("Index out-of-range.");
 	return _dataRows[rowIndex]->Data[columnIndex]->Value;
 }
 vector<string> Matrix::FormatString() {
@@ -436,7 +436,7 @@ void Matrix::MultiplyByScalar(int rowIndex, double scalar) {
 	}
 }
 
-void Matrix::AddRow(int baseRow, int additiveRow, bool inverseAdditive) {
+void Matrix::AddRow(int baseRow, int additiveRow, bool inverseAdditive, double scalar) {
 	// Range check.
 	if (baseRow < 0 || baseRow > _rows) throw new exception("Base row index is out-of-range.");
 	if (additiveRow < 0 || additiveRow > _rows) throw new exception("Additive row index is out-of-range.");
@@ -449,11 +449,11 @@ void Matrix::AddRow(int baseRow, int additiveRow, bool inverseAdditive) {
 	for (int c = 0; c < base->Length; ++c) {
 		if (!inverseAdditive) {
 			// Addition
-			base->Data[c]->Value += additive->Data[c]->Value;
+			base->Data[c]->Value += additive->Data[c]->Value * scalar;
 		}
 		else {
 			// Subtract (Additive inverse)
-			base->Data[c]->Value -= additive->Data[c]->Value;
+			base->Data[c]->Value -= additive->Data[c]->Value * scalar;
 		}
 	}
 }

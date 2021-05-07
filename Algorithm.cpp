@@ -5,7 +5,7 @@
 #include "Algorithm.h"
 
 // An implementation of the gauss-jordan elimination algorithm
-void Algorithm::Solve(Matrix* matrix, Matrix* outResult, bool printStep) {
+Matrix* Algorithm::Solve(Matrix* matrix, bool printStep) {
 	// Get row and column counts.
 	int targetRow = matrix->GetRows();
 	int targetCol = matrix->GetColumns();
@@ -26,30 +26,32 @@ void Algorithm::Solve(Matrix* matrix, Matrix* outResult, bool printStep) {
 	// Loop through rows of target length.
 	for (int pivot = 0; pivot < target; ++pivot) {
 		// Check for invalid leading entry.
-		if (matrix->GetValue(pivot, pivot) == 0) {
+		if (copy->GetValue(pivot, pivot) == 0) {
 			// Check if we could not rearrange.
-			if (!Rearrange(matrix, pivot, pivot)) {
+			if (!Rearrange(copy, pivot, pivot)) {
 				// If so, we move on to the next column.
 				continue;
 			}
 		}
 
 		// Check if the row is a pivot.
-		if (!CheckPivot(copy, pivot, pivot)) {
-			// If it is not, make it a pivot row.
+		if (!CheckPivot(copy, pivot, pivot) && pivot != copy->GetColumns()-1) {
+			double scalar = 1 / copy->GetValue(pivot, pivot);
+			copy->MultiplyByScalar(pivot, scalar);
 		}
-
 		// Check if the other rows are reduced.
 		// If not, reduce them.
+		for (int r = 0; r < target; ++r) {
+			if (r != pivot && pivot < target) {
+				if (!CheckReduced(copy, pivot, pivot + 1)) {
+					double scalar = copy->GetValue(r, pivot);
+					copy->AddRow(r, pivot, true, scalar);
+				}
+			}
+		}
 	}
 
-	// If the result matrix is not NULL, delete it.
-	if (outResult != NULL) {
-		delete outResult;
-	}
-
-	// Set the address of the result matrix to the address of our copied work matrix.
-	outResult = copy;
+	return copy;
 }
 
 /// <summary>
