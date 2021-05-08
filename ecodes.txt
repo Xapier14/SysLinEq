@@ -1,0 +1,8 @@
+Error Codes:
+1 - Bad column count
+2 - Bad row count
+3 - Out-of-range column index.
+4 - Out-of-range row index.
+5 - Matrix size should be equal.
+6 - Column size should be equal.
+7 - Row size should be equal.

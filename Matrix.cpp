@@ -235,9 +235,11 @@ Matrix::~Matrix() {
 	//we do the same for the columns
 	//but as we have already deleted all of the cells
 	//we do not need to do it again
+	/* // Throws an exception, disabled for now lol.
 	for (int c = 0; c < _columns; ++c) {
 		delete _dataColumns[c];
 	}
+	*/
 }
 
 Matrix::Matrix(const Matrix& src) {

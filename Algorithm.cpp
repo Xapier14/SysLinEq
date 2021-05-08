@@ -1,20 +1,33 @@
 #include <string>
 #include <iostream>
+#include <sstream>
 
 #include "Matrix.h"
 #include "Algorithm.h"
+
+string Fit(string src, int length) {
+	stringstream ss;
+	for (int i = 0; i < src.length() && i < length; ++i) {
+		ss << src[i];
+	}
+	if (src.length() < length) {
+		ss << generate_repitition(length - src.length(), ' ');
+	}
+	return ss.str();
+}
+
 
 // An implementation of the gauss-jordan elimination algorithm
 Matrix* Algorithm::Solve(Matrix* matrix, bool printStep) {
 	// Get row and column counts.
 	int targetRow = matrix->GetRows();
 	int targetCol = matrix->GetColumns();
-
+	 
 	// Account for augmented matrix.
 	if (matrix->IsAugmented) targetCol--;
 
 	// Check for bad column count.
-	if (targetCol < 1) throw new exception("Bad column count.");
+	if (targetCol < 1) throw new algo_exception(1, "Bad column count.");
 
 	// The target must be the lesser of the targetCol and targetRow.
 	int target = targetRow;
@@ -27,28 +40,41 @@ Matrix* Algorithm::Solve(Matrix* matrix, bool printStep) {
 	for (int pivot = 0; pivot < target; ++pivot) {
 		// Check for invalid leading entry.
 		if (copy->GetValue(pivot, pivot) == 0) {
+			// Create a copy of the matrix if we need to rearrange.
+			Matrix* oldCopy = new Matrix(*copy);
+
 			// Check if we could not rearrange.
 			if (!Rearrange(copy, pivot, pivot)) {
-				// If so, we move on to the next column.
+				// If we cannot, we move on to the next column.
 				continue;
 			}
+			else {
+				// Using the oldCopy matrix, we print the new matrix with labels for which row was switched.
+				PrintSwapped(oldCopy, copy);
+			}
+			// Delete our old copy as we do not need it anymore.
+			delete oldCopy;
 		}
 
 		// Check if the row is a pivot.
 		if (!CheckPivot(copy, pivot, pivot) && pivot != copy->GetColumns()-1) {
 			double scalar = 1 / copy->GetValue(pivot, pivot);
 			copy->MultiplyByScalar(pivot, scalar);
+			copy->PrintMatrix();
 		}
 		// Check if the other rows are reduced.
 		// If not, reduce them.
+		bool reduced = false;
 		for (int r = 0; r < target; ++r) {
 			if (r != pivot && pivot < target) {
 				if (!CheckReduced(copy, pivot, pivot + 1)) {
 					double scalar = copy->GetValue(r, pivot);
 					copy->AddRow(r, pivot, true, scalar);
+					reduced = true;
 				}
 			}
 		}
+		if (reduced) copy->PrintMatrix();
 	}
 
 	return copy;
@@ -75,7 +101,7 @@ bool Algorithm::CheckReduced(Matrix* matrix, int rowIndex, int colIndex) {
 	// Get the row to check
 	Row* r = matrix->GetRow(rowIndex);
 	// Check if the index to check is within the matrix columns.
-	if (colIndex >= matrix->GetColumns() || colIndex < 0) throw new exception("Invalid column index. Out-of-range.");
+	if (colIndex >= matrix->GetColumns() || colIndex < 0) throw new algo_exception(3, "Invalid column index. Out-of-range.");
 	// Check if the values to the left of the leading entry are zeros.
 	// If found to have non-zeros, return false as the row is not reduced.
 	for (int i = 0; i < colIndex; ++i) {
@@ -91,8 +117,48 @@ bool Algorithm::CheckReduced(Matrix* matrix, int rowIndex, int colIndex) {
 void Algorithm::PrintSwapped(Matrix* before, Matrix* after) {
 	// Matrix Size Check.
 	if (before->GetRows() != after->GetRows() || before->GetColumns() != after->GetColumns())
-		throw new exception("Matrix sizes should be equal.");
-	// Do comparison checks
+		throw new algo_exception(5, "Matrix sizes should be equal.");
+	// Define the length of a label.
+	const int labelLength = 8;
+	// Find row assignments.
+	vector<RowAssignment> newAssign = FindChanged(before, after);
+	// If we have row assignments.
+	if (newAssign.size() > 0) {
+		// Get a formatted vector list of string representation of the matrix.
+		vector<string> formatted = after->FormatString();
+
+		// For each line
+		for (int r = 0; r < formatted.size(); ++r) {
+			// Check if the line has a row assignment.
+			bool hasAssign = false;
+			RowAssignment* rA = NULL;
+			// For each found row assignment.
+			for (int a = 0; a < newAssign.size(); ++a) {
+				// Check if it matches the current row to check.
+				if (newAssign[a].newIndex == r - 1) {
+					//If it does, store the address.
+					rA = &(newAssign[a]);
+					hasAssign = true;
+					break;
+				}
+			}
+			// If we have a row assignment on the row to print.
+			if (hasAssign) {
+				// Create the label.
+				string label = "R" + to_string(rA->oldIndex + 1) + " -> R" + to_string(rA->newIndex + 1);
+				// Fit it to size.
+				label = Fit(label, labelLength);
+				// Print the label
+				cout << " " << label;
+			}
+			else {
+				//If we do not, we print a blank label.
+				cout << " " << generate_repitition(labelLength, ' ');
+			}
+			// We print the formatted line.
+			cout << " " << formatted[r] << endl;;
+		}
+	}
 }
 
 /// <summary>
@@ -106,9 +172,9 @@ bool Algorithm::IsRowEqual(Matrix* m1, Matrix* m2, int r1, int r2) {
 
 	// Check index range.
 	if (r1 < 0 || r1 >= m1->GetRows())
-		throw new exception("Row1 index is out-of-range.");
+		throw new algo_exception(4, "Row1 index is out-of-range.");
 	if (r2 < 0 || r2 >= m2->GetRows())
-		throw new exception("Row2 index is out-of-range.");
+		throw new algo_exception(4, "Row2 index is out-of-range.");
 
 	// Fetch rows.
 	Row* base = m1->GetRow(r1);
@@ -124,10 +190,29 @@ bool Algorithm::IsRowEqual(Matrix* m1, Matrix* m2, int r1, int r2) {
 	return true;
 }
 
+/// <summary>
+/// Checks if the specified rows are equal.
+/// </summary>
+bool Algorithm::IsRowEqual(Row* r1, Row* r2) {
+	// Length check
+	if (r1->Length != r2->Length) return false;
+
+	//For each element of row
+	for (int c = 0; c < r1->Length; ++c) {
+		// Check if one of them is not equal to the other.
+		if (r1->Data[c]->Value != r2->Data[c]->Value)
+			// If so, the rows should not be equal.
+			return false;
+	}
+
+	// If we have passed the for loop, it rows should be equal.
+	return true;
+}
+
 bool Algorithm::Rearrange(Matrix* matrix, int column, int row) {
 	// Matrix Size Check.
 	if (column < 0 || column >= matrix->GetColumns())
-		throw new exception("Column index is out-of-range.");
+		throw new algo_exception(3, "Column index is out-of-range.");
 
 	// Swapping algo.
 	// Conditions for swapping (in order of priority):
@@ -188,4 +273,48 @@ bool Algorithm::Rearrange(Matrix* matrix, int column, int row) {
 
 	// Return if the algo changed/swapped any rows.
 	return changed;
+}
+
+vector<RowAssignment> Algorithm::FindChanged(Matrix* oldMatrix, Matrix* newMatrix) {
+	// Create our return container.
+	vector<RowAssignment> ret;
+
+	// For each row from the oldMatrix
+	for (int r = 0; r < oldMatrix->GetRows(); ++r) {
+		// Get the row.
+		Row* ref = oldMatrix->GetRow(r);
+		
+		// Find its position in the newMatrix.
+		int newR = FindRow(newMatrix, ref);
+
+		// If the row is found, and that it was assigned to a new index.
+		if (newR != -1 && newR != r) {
+			// Create a RowAssignment and put it in our container.
+			ret.push_back(RowAssignment(r, newR));
+		}
+	}
+
+	// Return our results.
+	return ret;
+}
+
+int Algorithm::FindRow(Matrix* matrix, Row* ref) {
+	// Check length.
+	if (matrix->GetColumns() != ref->Length)
+		throw new algo_exception(7, "Row size should be equal.");
+
+	// For each row of the matrix.
+	for (int r = 0; r < matrix->GetRows(); ++r) {
+		// We get the row to check.
+		Row* chk = matrix->GetRow(r);
+
+		// Then we compare it if it is equal to our reference row.
+		if (IsRowEqual(chk, ref)) {
+			// If it does, then its row index is what we need to return.
+			return r;
+		}
+	}
+	
+	// Retrun -1 if the row cannot be found.
+	return -1;
 }
