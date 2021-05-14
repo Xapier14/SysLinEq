@@ -37,6 +37,10 @@ public:
 	void Init(int length, Matrix* parent);
 	// Repoints parent object.
 	void Repoint();
+	Cell*& operator[](int i) {
+		if (i < 0 || i > Length) throw new exception("Index is out-of-range.");
+		return Data[i];
+	}
 };
 
 class Column {
@@ -48,6 +52,10 @@ public:
 	void Init(int length, Matrix* parent, vector<Row*> referenceRows, int referenceColumn);
 	// Repoints parent object.
 	void Repoint();
+	Cell*& operator[](int i) {
+		if (i < 0 || i > Length) throw new exception("Index is out-of-range.");
+		return Data[i];
+	}
 };
 
 class Matrix {
@@ -81,7 +89,9 @@ public:
 	// Formats the matrix to a string array.
 	vector<string> FormatString();
 	// Prints the matrix to the screen.
-	void PrintMatrix();
+	//void PrintMatrix();
+	// Prints the matrix to the screen.
+	void PrintMatrix(int hRow = -1, int hCol = -1, int color = -1);
 
 	// Elementary Row Operations.
 	

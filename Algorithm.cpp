@@ -1,9 +1,16 @@
 #include <string>
 #include <iostream>
 #include <sstream>
+#include <Windows.h>
+#include <wincon.h>
 
 #include "Matrix.h"
 #include "Algorithm.h"
+
+//Color Codes
+const int COLOR_REDUCTION = BACKGROUND_RED | BACKGROUND_BLUE | BACKGROUND_INTENSITY;
+const int COLOR_PIVOT = BACKGROUND_GREEN | BACKGROUND_INTENSITY;
+const int COLOR_INPUT = BACKGROUND_GREEN | BACKGROUND_RED;
 
 string Fit(string src, int length) {
 	stringstream ss;
@@ -16,6 +23,11 @@ string Fit(string src, int length) {
 	return ss.str();
 }
 
+void Pause(string msg) {
+	string t;
+	cout << msg << endl;
+	getline(cin, t);
+}
 
 // An implementation of the gauss-jordan elimination algorithm
 Matrix* Algorithm::Solve(Matrix* matrix, bool printStep) {
@@ -29,54 +41,93 @@ Matrix* Algorithm::Solve(Matrix* matrix, bool printStep) {
 	// Check for bad column count.
 	if (targetCol < 1) throw new algo_exception(1, "Bad column count.");
 
-	// The target must be the lesser of the targetCol and targetRow.
+	// The target must be the greater of the targetCol and targetRow.
 	int target = targetRow;
 	if (target < targetCol) target = targetCol;
 
 	// Create a copy of the input matrix to work on.
 	Matrix* copy = new Matrix(*matrix);
 
+	// Init Step Counter
+	int step = 1;
+
 	// Loop through rows of target length.
-	for (int pivot = 0; pivot < target; ++pivot) {
+	for (int pivotCol = 0, pivotRow = 0; pivotCol < target; ++pivotCol, ++pivotRow) {
+		// Column Overshoot check
+		if (pivotCol >= targetCol) continue;
+		// Row Overshoot Check
+		if (pivotRow >= targetRow) continue;
+
 		// Check for invalid leading entry.
-		if (copy->GetValue(pivot, pivot) == 0) {
+		if (copy->GetValue(pivotRow, pivotCol) == 0) {
 			// Create a copy of the matrix if we need to rearrange.
 			Matrix* oldCopy = new Matrix(*copy);
 
 			// Check if we could not rearrange.
-			if (!Rearrange(copy, pivot, pivot)) {
+			if (!Rearrange(copy, pivotRow, pivotCol)) {
 				// If we cannot, we move on to the next column.
+				// Delete our old copy as we do not need it anymore.
+				delete oldCopy;
+				// Account for pivot row increment
+				--pivotRow;
 				continue;
 			}
 			else {
 				// Using the oldCopy matrix, we print the new matrix with labels for which row was switched.
-				PrintSwapped(oldCopy, copy);
+				if (printStep)
+				{
+					cout << step << ") ";
+					step++;
+					cout << "Swap row(s):" << endl;
+					PrintSwapped(oldCopy, copy); //NOTE: might be replaced soon.
+					Pause("Press enter to continue to the next step...");
+				}
 			}
 			// Delete our old copy as we do not need it anymore.
 			delete oldCopy;
 		}
 
 		// Check if the row is a pivot.
-		if (!CheckPivot(copy, pivot, pivot) && pivot != copy->GetColumns()-1) {
-			double scalar = 1 / copy->GetValue(pivot, pivot);
-			copy->MultiplyByScalar(pivot, scalar);
-			copy->PrintMatrix();
+		if (!CheckPivot(copy, pivotRow, pivotCol) && pivotCol != copy->GetColumns() - 1) {
+			// If it is, get the multiplicative inverse of the leading entry of the pivot.
+			double scalar = 1 / copy->GetValue(pivotRow, pivotCol);
+			// And multiply it to the row.
+			copy->MultiplyByScalar(pivotRow, scalar);
+			if (printStep)
+			{
+				cout << step << ") ";
+				step++;
+				cout << "Make pivot row:" << endl;
+				copy->PrintMatrix(pivotRow, -1, COLOR_PIVOT);
+				Pause("Press enter to continue to the next step...");
+			}
 		}
 		// Check if the other rows are reduced.
 		// If not, reduce them.
 		bool reduced = false;
 		for (int r = 0; r < target; ++r) {
-			if (r != pivot && pivot < target) {
-				if (!CheckReduced(copy, pivot, pivot + 1)) {
-					double scalar = copy->GetValue(r, pivot);
-					copy->AddRow(r, pivot, true, scalar);
-					reduced = true;
+			// If current rows exceed target row, break as we can no longer reduce.
+			if (r >= targetRow) break;
+			// If the current row is not the pivot row
+			if (r != pivotRow && pivotCol < target) {
+				// We check if the row is reduced
+				if (!CheckReduced(copy, r, pivotCol + 1)) {
+					// If so, we reduce it be getting our scalar
+					double scalar = copy->GetValue(r, pivotCol);
+					// And multiplying its inverse to the pivot row, and adding it to the current row.
+					copy->AddRow(r, pivotRow, true, scalar);
+					if (printStep)
+					{
+						cout << step << ") ";
+						step++;
+						cout << "Reduce row:" << endl;
+						copy->PrintMatrix(r, -1, COLOR_REDUCTION);
+						Pause("Press enter to continue to the next step...");
+					}
 				}
 			}
 		}
-		if (reduced) copy->PrintMatrix();
 	}
-
 	return copy;
 }
 
@@ -209,7 +260,7 @@ bool Algorithm::IsRowEqual(Row* r1, Row* r2) {
 	return true;
 }
 
-bool Algorithm::Rearrange(Matrix* matrix, int column, int row) {
+bool Algorithm::Rearrange(Matrix* matrix, int row, int column) {
 	// Matrix Size Check.
 	if (column < 0 || column >= matrix->GetColumns())
 		throw new algo_exception(3, "Column index is out-of-range.");
@@ -225,7 +276,7 @@ bool Algorithm::Rearrange(Matrix* matrix, int column, int row) {
 
 	// We check if we have a leading entry in another row.
 	// If so, we force the algo even if our working row is valid.
-	for (int r = 0; r < matrix->GetRows(); ++r) {
+	for (int r = row; r < matrix->GetRows(); ++r) {
 		if (CheckPivot(matrix, r, column))
 			force = true;
 	}
@@ -238,7 +289,7 @@ bool Algorithm::Rearrange(Matrix* matrix, int column, int row) {
 		}
 
 		// For each row, compare with our priority.
-		for (int r = 0; r < matrix->GetRows(); ++r) {
+		for (int r = row; r < matrix->GetRows(); ++r) {
 			if (!firstPass) {
 				// This is the first pass, meaning: we are checking for our first priority.
 				if (CheckPivot(matrix, r, column)) {
@@ -317,4 +368,39 @@ int Algorithm::FindRow(Matrix* matrix, Row* ref) {
 	
 	// Retrun -1 if the row cannot be found.
 	return -1;
+}
+
+double GetDouble() {
+	string t = "";
+	double r = 0;
+	getline(cin, t);
+	r = stod(t);
+	return r;
+}
+
+Matrix* Algorithm::InputMatrix(int rowSize, int columnSize, bool augmented) {
+	Matrix* mat = new Matrix(rowSize, columnSize, augmented);
+	for (int r = 0; r < rowSize; ++r) {
+		for (int c = 0; c < columnSize; ++c) {
+			string eMsg = "";
+			while (true) {
+				cout << "\n\n\n\n\n\n\n";
+				if (eMsg != "") {
+					cout << "ERROR: " << eMsg << endl;
+				}
+				cout << "Input Matrix:" << endl;
+				mat->PrintMatrix(r, c, COLOR_INPUT);
+				try {
+					cout << "Input Value for M(" << r + 1 << ", " << c + 1 << "): ";
+					mat->SetValue(r, c, GetDouble());
+					break;
+				}
+				catch (exception e){
+					eMsg = "Invalid input.";
+					continue;
+				}
+			}
+		}
+	}
+	return mat;
 }

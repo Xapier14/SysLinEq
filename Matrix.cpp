@@ -2,9 +2,14 @@
 #include <iostream>
 #include <vector>
 #include "Matrix.h"
+#include "Color.h"
 
 // The amount of decimals present in formatted cells.
 int MAX_DECIMALS = 2;
+bool PAD_ZERO = false;
+bool HIGHLIGHT = false;
+double TOLERANCE = 0.0000000001;
+HANDLE hCon = GetConsoleHandle();
 
 /// <summary>
 /// Sets the decimal count shown in formatted cells.
@@ -55,6 +60,8 @@ string to_string_ex(double val) {
 /// Formats the double into a fixed-width cell.
 /// </summary>
 string format_cell(double val, int spaceLeft) {
+	char padDec = ' ';
+	if (PAD_ZERO) padDec = '0';
 	string result = ""; //this our final result
 	string data = to_string_ex(val); //let's get a string representation of the double first.
 
@@ -75,7 +82,7 @@ string format_cell(double val, int spaceLeft) {
 	//we check if the number of decimals are lesser than the max
 	if (dCount < MAX_DECIMALS) {
 		//if it does, we pad the right side of the string to meet the desired cell length
-		for (int i = 0; i < MAX_DECIMALS - dCount; ++i) result += "0";
+		for (int i = 0; i < MAX_DECIMALS - dCount; ++i) result += padDec;
 	}
 
 	//return our final result
@@ -269,7 +276,7 @@ Matrix::Matrix(const Matrix& src) {
 	}
 
 	//init columns
-	for (int i = 0; i < _rows; ++i) {
+	for (int i = 0; i < _columns; ++i) {
 		//create a new instance of our column class
 		Column* cl = new Column();
 
@@ -332,6 +339,8 @@ Column* Matrix::GetColumn(int columnIndex) {
 }
 void Matrix::SetValue(int rowIndex, int columnIndex, double val) {
 	if (columnIndex < 0 || columnIndex >= _columns || rowIndex < 0 || rowIndex >= _rows) throw new exception("Index out-of-range.");
+	// Workaround for weird C++ negative zeros.
+	if (val < 0 && val > -TOLERANCE) val = 0;
 	_dataRows[rowIndex]->Data[columnIndex]->Value = val;
 }
 double Matrix::GetValue(int rowIndex, int columnIndex) {
@@ -389,10 +398,12 @@ vector<string> Matrix::FormatString() {
 	return ret;
 }
 
+/*
 void Matrix::PrintMatrix() {
 	vector<string> r = FormatString();
 	for (int i = 0; i < r.size(); ++i) cout << r[i] << endl;
 }
+*/
 
 Matrix* Matrix::CreateMatrix(int rows, int columns, bool isAugmented) {
 	Matrix* ret = new Matrix(rows, columns, isAugmented);
@@ -458,4 +469,100 @@ void Matrix::AddRow(int baseRow, int additiveRow, bool inverseAdditive, double s
 			base->Data[c]->Value -= additive->Data[c]->Value * scalar;
 		}
 	}
+}
+
+void Matrix::PrintMatrix(int hRow, int hCol, int color) {
+	// cout handle
+
+	// char styling
+	// ul = ┌, dl = └, ur = ┐, dr = ┘, as = │
+	char ul = 218, dl = 192, ur = 191, dr = 217, as = 179;
+	char cs = ' ', ds = 179;
+
+	// get common cell width
+	int w = 0;
+	for (int r = 0; r < _rows; ++r) {
+		for (int c = 0; c < _columns; ++c) {
+			string temp = to_string_ex(GetValue(r, c));
+			int size = temp.find_first_of('.');
+			if (size != string::npos) {
+				if (size > w) w = size;
+			}
+		}
+	}
+	// Calculate String Length
+	// For a cell, we know that its length is w + MAX_DECIMALS + 1
+	// The right padding for the left vertline is 1, left padding for the right vertline is also 1.
+	// The space between cells are given by cs + ' ', which is 2.
+	// For augmented cells, the last spacer has a length of 4 given by " " + ds + "  ".
+	// With this, the formula for string length is:
+	// 	   Non Augmented:
+	//			l = (cell*c)+(sp*c-1)+4;
+	// 	   Augmented:
+	//			l = (cell*c)+(sp*c-2)+8;
+	int lineLength = 0;
+	int cellLength = w + MAX_DECIMALS + 1;
+	if (IsAugmented) {
+		lineLength = (cellLength * _columns) + (2 * (_columns - 2)) + 8;
+	}
+	else {
+		lineLength = (cellLength * _columns) + (2 * (_columns - 1)) + 4;
+	}
+	// Account for character corners
+	lineLength -= 2;
+
+	// Store old color
+	int oldColor = 0;
+
+	// Print top
+	cout << ul << generate_repitition(lineLength, ' ') << ur << endl;
+
+	// for each data row
+	for (int r = 0; r < _rows; ++r) {
+		// Store old color
+		oldColor = GetCurrentColor(hCon);
+		// Print Left VertLine
+		cout << as << " ";
+		// If current row is to be highlighted by whole,
+		if (r == hRow && hCol == -1)
+			SetColor(color, hCon);
+
+		for (int c = 0; c < _columns; ++c) {
+			// If the current cell is to be highlighted
+			if (hRow == r && hCol == c || hCol == c && hRow == -1)
+				SetColor(color, hCon);
+			// Print cell
+			string s = format_cell(GetValue(r, c), w);
+			cout << format_cell(GetValue(r, c), w);
+			// Return to old color
+			if (hRow == r && hCol == c || hCol == c && hRow == -1)
+				SetColor(oldColor, hCon);
+			//Print seperator
+			if (c <= _columns - 3) {
+				cout << cs << " ";
+			}
+			else {
+				if (c <= _columns - 2)
+				{
+					if (IsAugmented)
+					{
+						cout << +" " << ds << "  ";
+					}
+					else {
+						cout << cs << " ";
+					}
+				}
+				else {
+					SetColor(oldColor, hCon);
+					cout << cs << as;
+				}
+			}
+		}
+		SetColor(oldColor, hCon);
+		cout << endl;
+	}
+
+
+	// Print bot
+	cout << dl << generate_repitition(lineLength, ' ') << dr << endl;
 }

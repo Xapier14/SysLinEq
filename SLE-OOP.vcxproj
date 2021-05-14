@@ -140,15 +140,20 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Algorithm.cpp" />
+    <ClCompile Include="Color.cpp" />
     <ClCompile Include="Matrix.cpp" />
     <ClCompile Include="SLE-OOP.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Algorithm.h" />
+    <ClInclude Include="Color.h" />
     <ClInclude Include="Matrix.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="ecodes.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

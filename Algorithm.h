@@ -16,9 +16,10 @@ public:
 	static void PrintSwapped(Matrix* before, Matrix* after);
 	static bool IsRowEqual(Matrix* m1, Matrix* m2, int r1, int r2);
 	static bool IsRowEqual(Row* r1, Row* r2);
-	static bool Rearrange(Matrix* matrix, int column, int row);
+	static bool Rearrange(Matrix* matrix, int row, int column);
 	static vector<RowAssignment> FindChanged(Matrix* oldMatrix, Matrix* newMatrix);
 	static int FindRow(Matrix* matrix, Row* ref);
+	static Matrix* InputMatrix(int rowSize, int columnSize, bool augmented);
 };
 
 class algo_exception : public exception {
@@ -46,4 +47,18 @@ struct RowAssignment {
 		oldIndex = o;
 		newIndex = n;
 	}
+};
+
+enum SolutionType {
+	NoSolution,
+	UniqueSolution,
+	ManySolution
+};
+
+class SolutionSet {
+private:
+	vector<string> _vars;
+	SolutionType _sType;
+public:
+	static SolutionSet Parse(Matrix* srcMatrix);
 };
