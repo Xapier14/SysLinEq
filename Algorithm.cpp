@@ -11,6 +11,8 @@
 const int COLOR_REDUCTION = BACKGROUND_RED | BACKGROUND_BLUE | BACKGROUND_INTENSITY;
 const int COLOR_PIVOT = BACKGROUND_GREEN | BACKGROUND_INTENSITY;
 const int COLOR_INPUT = BACKGROUND_GREEN | BACKGROUND_RED;
+const bool AUTOSKIP = true;
+const int AUTOSKIP_DURATION = 500;
 
 string Fit(string src, int length) {
 	stringstream ss;
@@ -24,9 +26,23 @@ string Fit(string src, int length) {
 }
 
 void Pause(string msg) {
+	if (AUTOSKIP) {
+		cout << endl;
+		sleep(AUTOSKIP_DURATION);
+		return;
+	}
 	string t;
 	cout << msg << endl;
 	getline(cin, t);
+}
+
+bool HasOtherLead(Matrix* mat, int pivotRow, int pivotCol) {
+	for (int i = pivotRow+1; i < mat->GetRows(); ++i) {
+		if (abs(mat->GetValue(i, pivotCol)) == 1) {
+			return true;
+		}
+	}
+	return false;
 }
 
 // An implementation of the gauss-jordan elimination algorithm
@@ -58,8 +74,8 @@ Matrix* Algorithm::Solve(Matrix* matrix, bool printStep) {
 		// Row Overshoot Check
 		if (pivotRow >= targetRow) continue;
 
-		// Check for invalid leading entry.
-		if (copy->GetValue(pivotRow, pivotCol) == 0) {
+		// Check for invalid leading entry or has other leading entry.
+		if (copy->GetValue(pivotRow, pivotCol) == 0 || HasOtherLead(copy, pivotRow, pivotCol)) {
 			// Create a copy of the matrix if we need to rearrange.
 			Matrix* oldCopy = new Matrix(*copy);
 
@@ -76,6 +92,7 @@ Matrix* Algorithm::Solve(Matrix* matrix, bool printStep) {
 				// Using the oldCopy matrix, we print the new matrix with labels for which row was switched.
 				if (printStep)
 				{
+					system("cls");
 					cout << step << ") ";
 					step++;
 					cout << "Swap row(s):" << endl;
@@ -95,10 +112,12 @@ Matrix* Algorithm::Solve(Matrix* matrix, bool printStep) {
 			copy->MultiplyByScalar(pivotRow, scalar);
 			if (printStep)
 			{
+				system("cls");
 				cout << step << ") ";
 				step++;
 				cout << "Make pivot row:" << endl;
 				copy->PrintMatrix(pivotRow, -1, COLOR_PIVOT);
+				cout << "R" << to_string(pivotRow + 1) << " * (1/" << 1/scalar << ") -> R" << to_string(pivotRow + 1) << endl;
 				Pause("Press enter to continue to the next step...");
 			}
 		}
@@ -111,17 +130,19 @@ Matrix* Algorithm::Solve(Matrix* matrix, bool printStep) {
 			// If the current row is not the pivot row
 			if (r != pivotRow && pivotCol < target) {
 				// We check if the row is reduced
-				if (!CheckReduced(copy, r, pivotCol + 1)) {
+				if (!CheckReduced(copy, r, pivotCol)) {
 					// If so, we reduce it be getting our scalar
 					double scalar = copy->GetValue(r, pivotCol);
 					// And multiplying its inverse to the pivot row, and adding it to the current row.
 					copy->AddRow(r, pivotRow, true, scalar);
 					if (printStep)
 					{
+						system("cls");
 						cout << step << ") ";
 						step++;
 						cout << "Reduce row:" << endl;
-						copy->PrintMatrix(r, -1, COLOR_REDUCTION);
+						copy->PrintMatrix(r, -1, COLOR_REDUCTION, pivotRow, -1, COLOR_PIVOT);
+						cout << "(R" << to_string(pivotRow + 1) << " * " << -scalar << ") + R" << to_string(r+1) << " -> R" << to_string(pivotRow + 1) << endl;
 						Pause("Press enter to continue to the next step...");
 					}
 				}
@@ -138,7 +159,7 @@ bool Algorithm::CheckPivot(Matrix* matrix, int rowIndex, int colIndex) {
 	// A prerequisite of a pivot row is that is must be reduced.
 	// Here, we check if it is not reduced.
 	// If it is not, then it must not be a pivot row.
-	if (!CheckReduced(matrix, rowIndex, colIndex)) return false;
+	//if (!CheckReduced(matrix, rowIndex, colIndex)) return false;
 
 	// Now if it is, we return the result of "leading_entry == 1".
 	// As a pivot row, it must have its leading entry equal to 1.
@@ -153,13 +174,15 @@ bool Algorithm::CheckReduced(Matrix* matrix, int rowIndex, int colIndex) {
 	Row* r = matrix->GetRow(rowIndex);
 	// Check if the index to check is within the matrix columns.
 	if (colIndex >= matrix->GetColumns() || colIndex < 0) throw new algo_exception(3, "Invalid column index. Out-of-range.");
+	/*
 	// Check if the values to the left of the leading entry are zeros.
 	// If found to have non-zeros, return false as the row is not reduced.
 	for (int i = 0; i < colIndex; ++i) {
 		if (matrix->GetValue(rowIndex, i) != 0) return false;
 	}
-	// Return true as the row has zero values to its left.
-	return true;
+	*/
+	if (matrix->GetValue(rowIndex, colIndex) == 0) return true;
+	return false;
 }
 
 /// <summary>
@@ -273,12 +296,18 @@ bool Algorithm::Rearrange(Matrix* matrix, int row, int column) {
 	bool firstPass = false;
 	bool changed = false;
 	bool force = false;
+	bool positiveForce = false;
 
 	// We check if we have a leading entry in another row.
 	// If so, we force the algo even if our working row is valid.
 	for (int r = row; r < matrix->GetRows(); ++r) {
-		if (CheckPivot(matrix, r, column))
+		if (abs(matrix->GetValue(r, column)) == 1)
+		{
 			force = true;
+			if (matrix->GetValue(r, column) == 1) {
+				positiveForce = true;
+			}
+		}
 	}
 
 	while (true) {
@@ -289,14 +318,25 @@ bool Algorithm::Rearrange(Matrix* matrix, int row, int column) {
 		}
 
 		// For each row, compare with our priority.
-		for (int r = row; r < matrix->GetRows(); ++r) {
+		for (int r = row+1; r < matrix->GetRows(); ++r) {
+			if (matrix->GetValue(r, column) == matrix->GetValue(row, column)) continue;
 			if (!firstPass) {
 				// This is the first pass, meaning: we are checking for our first priority.
-				if (CheckPivot(matrix, r, column)) {
+				if (abs(matrix->GetValue(r, column)) == 1) {
 					// Our row is a pivot, we can now swap this with the row we are working on.
-					matrix->SwapRow(row, r);
-					changed = true;
-					break;
+					
+					// We check if the positiveForce flag is raised, meaning we need to swap with a positive leading entry.
+					// This swaps either if:
+					// Positive force true,
+					//		leading entry is a positive.
+					// Positive force false,
+					//		leading entry can be either positive or negative.
+					if (!positiveForce || matrix->GetValue(r, column) != -1)
+					{
+						matrix->SwapRow(row, r);
+						changed = true;
+						break;
+					}
 				}
 			}
 			else {
@@ -384,7 +424,7 @@ Matrix* Algorithm::InputMatrix(int rowSize, int columnSize, bool augmented) {
 		for (int c = 0; c < columnSize; ++c) {
 			string eMsg = "";
 			while (true) {
-				cout << "\n\n\n\n\n\n\n";
+				cout << generate_repitition(40, '\n');
 				if (eMsg != "") {
 					cout << "ERROR: " << eMsg << endl;
 				}
@@ -403,4 +443,100 @@ Matrix* Algorithm::InputMatrix(int rowSize, int columnSize, bool augmented) {
 		}
 	}
 	return mat;
+}
+
+bool IsNegative(double num) {
+	return num < 0;
+}
+
+SolutionSet* SolutionSet::Parse(Matrix* srcMatrix) {
+	if (!srcMatrix->IsAugmented) throw new algo_exception(8, "Matrix is not augmented.");
+	SolutionSet* ret = new SolutionSet();
+	ret->_sType = SolutionType::UniqueSolution;
+	// Do stuff.
+	for (int r = 0; r < srcMatrix->GetRows(); ++r) {
+		int definition = -1;
+		bool hasNonConst = false;
+		bool nonZeroConst = srcMatrix->GetValue(r, srcMatrix->GetColumns() - 1) != 0;
+		bool allZero = true;
+		bool initial = true;
+		stringstream ss;
+		for (int c = 0; c < srcMatrix->GetColumns() - 1; ++c) {
+			if (srcMatrix->GetValue(r, c) != 0)
+			{
+				allZero = false;
+				// we dont have a definition yet,
+				if (definition < 0) {
+					//this will be our indep var
+					definition = c;
+					ss << "X" << c + 1 << " =";
+				}
+				else {
+					hasNonConst = true;
+					//this is a dep var
+					if (initial) {
+						initial = false;
+						ss << " " << -srcMatrix->GetValue(r, c) << "(X" << c + 1 << ")";
+					}
+					else
+					{
+						if (IsNegative(srcMatrix->GetValue(r, c))) {
+							// write addition
+							ss << " + " << abs(srcMatrix->GetValue(r, c)) << "(X" << c + 1 << ")";
+						}
+						else {
+							// write subtraction
+							ss << " - " << abs(srcMatrix->GetValue(r, c)) << "(X" << c + 1 << ")";
+						}
+					}
+				}
+			}
+		}
+		if (nonZeroConst && allZero) {
+			ret->_sType = SolutionType::NoSolution;
+			ss.clear();
+			ret->_vars.clear();
+			break;
+		}
+		if (definition > -1)
+		{
+			if (hasNonConst) {
+				ret->_sType = SolutionType::ManySolution;
+				if (srcMatrix->GetValue(r, srcMatrix->GetColumns() - 1) != 0) {
+					if (IsNegative(srcMatrix->GetValue(r, srcMatrix->GetColumns() - 1))) {
+						// write subtraction
+						ss << " - " << abs(srcMatrix->GetValue(r, srcMatrix->GetColumns() - 1));
+					}
+					else {
+						// write addition
+						ss << " + " << abs(srcMatrix->GetValue(r, srcMatrix->GetColumns() - 1));
+					}
+				}
+			}
+			else {
+				ss << " " << srcMatrix->GetValue(r, srcMatrix->GetColumns() - 1);
+			}
+			if (ss.str().length() > 0) ret->_vars.push_back(ss.str());
+		}
+	}
+	return ret;
+}
+void SolutionSet::Print() {
+	switch (_sType) {
+		case SolutionType::NoSolution:
+			cout << "Solution Type:\n\t-NO SOLUTION-\n" << endl;
+			cout << "Remarks:\n\tThe system is inconsistent." << endl;
+			return;
+		case SolutionType::UniqueSolution:
+			cout << "Solution Type:\n\t-UNIQUE SOLUTION-\n" << endl;
+			cout << "Solution Set:" << endl;
+			break;
+		case SolutionType::ManySolution:
+			cout << "Solution Type:\n\t-MANY/INFINITE SOLUTIONS-\n" << endl;
+			cout << "Solution Set:" << endl;
+			break;
+	}
+	for (int e = 0; e < _vars.size(); ++e) {
+		cout << "\t" << _vars[e] << endl;
+	}
 }

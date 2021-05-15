@@ -49,7 +49,7 @@ struct RowAssignment {
 	}
 };
 
-enum SolutionType {
+enum class SolutionType {
 	NoSolution,
 	UniqueSolution,
 	ManySolution
@@ -60,5 +60,6 @@ private:
 	vector<string> _vars;
 	SolutionType _sType;
 public:
-	static SolutionSet Parse(Matrix* srcMatrix);
+	static SolutionSet* Parse(Matrix* srcMatrix);
+	void Print();
 };

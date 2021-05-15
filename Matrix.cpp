@@ -1,6 +1,8 @@
 ﻿#include <string>
 #include <iostream>
 #include <vector>
+#include <thread>
+#include <chrono>
 #include "Matrix.h"
 #include "Color.h"
 
@@ -8,8 +10,8 @@
 int MAX_DECIMALS = 2;
 bool PAD_ZERO = false;
 bool HIGHLIGHT = false;
-double TOLERANCE = 0.0000000001;
 HANDLE hCon = GetConsoleHandle();
+double REMOVE = 0.00000001;
 
 /// <summary>
 /// Sets the decimal count shown in formatted cells.
@@ -18,6 +20,10 @@ void set_max_decimal(int maxDecimal) {
 	if (maxDecimal < 1) throw new exception("Max decimal must be greater than 0.");
 	if (maxDecimal > 10) throw new exception("Max decimal must not be greater than 10.");
 	MAX_DECIMALS = maxDecimal;
+}
+
+void sleep(int ms) {
+	this_thread::sleep_for(chrono::milliseconds(ms));
 }
 
 /// <summary>
@@ -340,7 +346,7 @@ Column* Matrix::GetColumn(int columnIndex) {
 void Matrix::SetValue(int rowIndex, int columnIndex, double val) {
 	if (columnIndex < 0 || columnIndex >= _columns || rowIndex < 0 || rowIndex >= _rows) throw new exception("Index out-of-range.");
 	// Workaround for weird C++ negative zeros.
-	if (val < 0 && val > -TOLERANCE) val = 0;
+	if (val == -0.0) val = +0.0;
 	_dataRows[rowIndex]->Data[columnIndex]->Value = val;
 }
 double Matrix::GetValue(int rowIndex, int columnIndex) {
@@ -446,6 +452,9 @@ void Matrix::MultiplyByScalar(int rowIndex, double scalar) {
 	// For each cell, multiply by scalar.
 	for (int i = 0; i < base->Length; ++i) {
 		base->Data[i]->Value *= scalar;
+		// Workaround for weird c++ negative zeros:
+		if (base->Data[i]->Value == -0.0) base->Data[i]->Value = +0.0;
+		if (abs(base->Data[i]->Value) < REMOVE) base->Data[i]->Value = +0.0;
 	}
 }
 
@@ -468,10 +477,13 @@ void Matrix::AddRow(int baseRow, int additiveRow, bool inverseAdditive, double s
 			// Subtract (Additive inverse)
 			base->Data[c]->Value -= additive->Data[c]->Value * scalar;
 		}
+		// Workaround for weird c++ negative zeros:
+		if (base->Data[c]->Value == -0.0) base->Data[c]->Value = +0.0;
+		if (abs(base->Data[c]->Value) < REMOVE) base->Data[c]->Value = +0.0;
 	}
 }
 
-void Matrix::PrintMatrix(int hRow, int hCol, int color) {
+void Matrix::PrintMatrix(int hRow, int hCol, int color, int hARow, int hACol, int aColor) {
 	// cout handle
 
 	// char styling
@@ -527,15 +539,22 @@ void Matrix::PrintMatrix(int hRow, int hCol, int color) {
 		if (r == hRow && hCol == -1)
 			SetColor(color, hCon);
 
+		if (r == hARow && hACol == -1)
+			SetColor(aColor, hCon);
+
 		for (int c = 0; c < _columns; ++c) {
 			// If the current cell is to be highlighted
 			if (hRow == r && hCol == c || hCol == c && hRow == -1)
 				SetColor(color, hCon);
+			if (hARow == r && hACol == c || hACol == c && hARow == -1)
+				SetColor(aColor, hCon);
 			// Print cell
 			string s = format_cell(GetValue(r, c), w);
 			cout << format_cell(GetValue(r, c), w);
 			// Return to old color
 			if (hRow == r && hCol == c || hCol == c && hRow == -1)
+				SetColor(oldColor, hCon);
+			if (hARow == r && hACol == c || hACol == c && hARow == -1)
 				SetColor(oldColor, hCon);
 			//Print seperator
 			if (c <= _columns - 3) {

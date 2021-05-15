@@ -6,3 +6,4 @@ Error Codes:
 5 - Matrix size should be equal.
 6 - Column size should be equal.
 7 - Row size should be equal.
+8 - Matrix must be augmented.

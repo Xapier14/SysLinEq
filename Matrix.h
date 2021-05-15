@@ -15,6 +15,7 @@ string to_string_ex(double val);
 string format_cell(double val, int spaceLeft);
 string generate_repitition(int rep, char c);
 void set_max_decimal(int maxDecimal);
+void sleep(int ms);
 
 class Matrix;
 
@@ -91,7 +92,7 @@ public:
 	// Prints the matrix to the screen.
 	//void PrintMatrix();
 	// Prints the matrix to the screen.
-	void PrintMatrix(int hRow = -1, int hCol = -1, int color = -1);
+	void PrintMatrix(int hRow = -1, int hCol = -1, int color = -1, int hARow = -1, int hACol = -1, int aColor = -1);
 
 	// Elementary Row Operations.
 	
