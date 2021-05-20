@@ -20,6 +20,7 @@ public:
 	static vector<RowAssignment> FindChanged(Matrix* oldMatrix, Matrix* newMatrix);
 	static int FindRow(Matrix* matrix, Row* ref);
 	static Matrix* InputMatrix(int rowSize, int columnSize, bool augmented);
+	static void ChangeSettings(bool* pS, int pL);
 };
 
 class algo_exception : public exception {

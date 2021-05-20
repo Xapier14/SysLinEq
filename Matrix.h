@@ -90,8 +90,6 @@ public:
 	// Formats the matrix to a string array.
 	vector<string> FormatString();
 	// Prints the matrix to the screen.
-	//void PrintMatrix();
-	// Prints the matrix to the screen.
 	void PrintMatrix(int hRow = -1, int hCol = -1, int color = -1, int hARow = -1, int hACol = -1, int aColor = -1);
 
 	// Elementary Row Operations.
@@ -105,6 +103,6 @@ public:
 
 	// Static functions.
 	
-	// Creates a matrix and repoints its data mambers (kinda un-needed, might remove sometime soon (TM)).
+	// Creates a matrix and repoints its data mambers (kinda unnecessary, might remove sometime soon (TM)).
 	static Matrix* CreateMatrix(int rows, int columns, bool isAugmented);
 };

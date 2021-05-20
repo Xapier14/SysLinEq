@@ -8,11 +8,14 @@
 #include "Algorithm.h"
 
 //Color Codes
+
 const int COLOR_REDUCTION = BACKGROUND_RED | BACKGROUND_BLUE | BACKGROUND_INTENSITY;
 const int COLOR_PIVOT = BACKGROUND_GREEN | BACKGROUND_INTENSITY;
 const int COLOR_INPUT = BACKGROUND_GREEN | BACKGROUND_RED;
-const bool AUTOSKIP = true;
-const int AUTOSKIP_DURATION = 500;
+const int BLOCKWALL_LENGTH = 20;
+bool AUTOSKIP = false;
+bool CLEARSTEP = false;
+int AUTOSKIP_DURATION = 500;
 
 string Fit(string src, int length) {
 	stringstream ss;
@@ -92,7 +95,12 @@ Matrix* Algorithm::Solve(Matrix* matrix, bool printStep) {
 				// Using the oldCopy matrix, we print the new matrix with labels for which row was switched.
 				if (printStep)
 				{
-					system("cls");
+					if (CLEARSTEP) {
+						system("cls");
+					}
+					else {
+						cout << generate_repitition(BLOCKWALL_LENGTH, '\n');
+					}
 					cout << step << ") ";
 					step++;
 					cout << "Swap row(s):" << endl;
@@ -112,7 +120,12 @@ Matrix* Algorithm::Solve(Matrix* matrix, bool printStep) {
 			copy->MultiplyByScalar(pivotRow, scalar);
 			if (printStep)
 			{
-				system("cls");
+				if (CLEARSTEP) {
+					system("cls");
+				}
+				else {
+					cout << generate_repitition(BLOCKWALL_LENGTH, '\n');
+				}
 				cout << step << ") ";
 				step++;
 				cout << "Make pivot row:" << endl;
@@ -137,7 +150,12 @@ Matrix* Algorithm::Solve(Matrix* matrix, bool printStep) {
 					copy->AddRow(r, pivotRow, true, scalar);
 					if (printStep)
 					{
-						system("cls");
+						if (CLEARSTEP) {
+							system("cls");
+						}
+						else {
+							cout << generate_repitition(BLOCKWALL_LENGTH, '\n');
+						}
 						cout << step << ") ";
 						step++;
 						cout << "Reduce row:" << endl;
@@ -538,5 +556,82 @@ void SolutionSet::Print() {
 	}
 	for (int e = 0; e < _vars.size(); ++e) {
 		cout << "\t" << _vars[e] << endl;
+	}
+}
+
+void PrintCenteredex(string text, int lineWidth) {
+	if (text.length() > lineWidth) {
+		cout << text.substr(0, lineWidth);
+		return;
+	}
+	int offset = (lineWidth / 2) - (text.length() / 2);
+	cout << generate_repitition(offset, ' ');
+	cout << text;
+	cout << endl;
+}
+string GetStringex() {
+	string temp = "";
+	getline(cin, temp);
+	return temp;
+}
+int GetIntex() {
+	string temp = GetStringex();
+	int r = 0;
+	if (temp.length() == 0) return 0;
+	try {
+		r = stoi(temp);
+	}
+	catch (exception ex) {}
+	return r;
+}
+void Algorithm::ChangeSettings(bool* pS, int pL) {
+	bool retu;
+	int choice;
+	string eM = "";
+	while (true)
+	{
+		retu = false;
+		if (eM != "") cout << eM;
+		eM = "";
+		cout << endl;
+		PrintCenteredex("-[SETTINGS]-", pL);
+		cout << endl;
+		cout << generate_repitition(pL, '-') << endl;
+		cout << endl;
+		cout << " 1. Print Step = " << *pS << endl;
+		cout << " 2. Clear After Step = " << CLEARSTEP << endl;
+		cout << " 3. Autoplay Step = " << AUTOSKIP << endl;
+		cout << " 4. Autoplay Step Duration = " << AUTOSKIP_DURATION << "ms" << endl;
+		cout << " 5. Return to menu" << endl;
+		cout << endl;
+		cout << generate_repitition(pL, '-') << endl;
+		cout << "Input: ";
+		choice = GetIntex();
+		switch (choice) {
+		case 1:
+			*pS = !*pS;
+			break;
+		case 2:
+			CLEARSTEP = !CLEARSTEP;
+			break;
+		case 3:
+			AUTOSKIP = !AUTOSKIP;
+			break;
+		case 4:
+			cout << "Enter new value for duration (in ms): ";
+			choice = GetIntex();
+			if (choice >= 200 && choice <= 5000) {
+				AUTOSKIP_DURATION = choice;
+			}
+			else {
+				eM = "Value out-of-range. Range: 200-5000.\n";
+			}
+			break;
+		case 5:
+			retu = true;
+			break;
+		}
+		system("cls");
+		if (retu) break;
 	}
 }
