@@ -154,10 +154,17 @@ int main()
 					}
 				}
 				system("cls");
-				mat = Algorithm::InputMatrix(n, m, true);
-				result = Algorithm::Solve(mat, print);
-				set = SolutionSet::Parse(result);
-				set->Print();
+				try {
+					mat = Algorithm::InputMatrix(n, m, true);
+					result = Algorithm::Solve(mat, print);
+					set = SolutionSet::Parse(result);
+					set->Print();
+				}
+				catch (algo_exception* aE) {
+					cout << "ERROR! Exception thrown in solving algorithm." << endl;
+					cout << "Error code: " << aE->ecode << endl;
+					cout << "Error message: " << aE->msg;
+				}
 				cout << endl << endl;
 				CPause();
 				delete mat, result, set;
