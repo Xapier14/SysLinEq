@@ -8,43 +8,60 @@
 #include "Algorithm.h"
 
 //Color Codes
-
 const int COLOR_REDUCTION = BACKGROUND_RED | BACKGROUND_BLUE | BACKGROUND_INTENSITY;
 const int COLOR_PIVOT = BACKGROUND_GREEN | BACKGROUND_INTENSITY;
 const int COLOR_INPUT = BACKGROUND_GREEN | BACKGROUND_RED;
+//Flags
 const int BLOCKWALL_LENGTH = 20;
 bool AUTOSKIP = false;
 bool CLEARSTEP = false;
 int AUTOSKIP_DURATION = 500;
 
+// Fits a string to a specified length
 string Fit(string src, int length) {
+	// our temorary stream buffer
 	stringstream ss;
+	// copy the string to our buffer, make sure that we do not copy more than the specified length
 	for (int i = 0; i < src.length() && i < length; ++i) {
 		ss << src[i];
 	}
+	// if the string length is lesser than the desired length, generate whitespace to pad to the desired length
 	if (src.length() < length) {
 		ss << generate_repitition(length - src.length(), ' ');
 	}
+	// return the string representation of our temporary buffer
 	return ss.str();
 }
 
+// Pauses code execution
 void Pause(string msg) {
+	// If auto skip is enabled
 	if (AUTOSKIP) {
+		// sleep instead of pausing
 		cout << endl;
 		sleep(AUTOSKIP_DURATION);
+		// exit out of function
 		return;
 	}
+	// create a temporary string
 	string t;
 	cout << msg << endl;
+	// and get input
 	getline(cin, t);
 }
 
+// Checks if the matrix has another optimal leading entry besides the one specified
 bool HasOtherLead(Matrix* mat, int pivotRow, int pivotCol) {
+	// for each row,
 	for (int i = pivotRow+1; i < mat->GetRows(); ++i) {
+		// we check the pivot column of that row if it is 1 or -1
+		// we are assuming that it is already reduced.
 		if (abs(mat->GetValue(i, pivotCol)) == 1) {
+			// if it is, then return true
 			return true;
 		}
 	}
+	// no other optimal leading entry found.
 	return false;
 }
 
@@ -407,6 +424,7 @@ vector<RowAssignment> Algorithm::FindChanged(Matrix* oldMatrix, Matrix* newMatri
 	return ret;
 }
 
+// Finds a row from a matrix using a row reference and returns its rowIndex.
 int Algorithm::FindRow(Matrix* matrix, Row* ref) {
 	// Check length.
 	if (matrix->GetColumns() != ref->Length)
@@ -428,32 +446,47 @@ int Algorithm::FindRow(Matrix* matrix, Row* ref) {
 	return -1;
 }
 
+// Gets a double input
 double GetDouble() {
+	// our temporary string
 	string t = "";
+	// our return value
 	double r = 0;
+	// input a double rep onto the string
 	getline(cin, t);
+	// convert
 	r = stod(t);
+	// return the converted value
 	return r;
 }
 
+// Creates a matrix and requests the user for values
 Matrix* Algorithm::InputMatrix(int rowSize, int columnSize, bool augmented) {
+	// Our matrix
 	Matrix* mat = new Matrix(rowSize, columnSize, augmented);
+	// For each row
 	for (int r = 0; r < rowSize; ++r) {
+		// and each of its column
 		for (int c = 0; c < columnSize; ++c) {
-			string eMsg = "";
-			while (true) {
-				cout << generate_repitition(40, '\n');
+			string eMsg = ""; // error Msg Buff
+			while (true) { // loop while error
+				cout << generate_repitition(40, '\n'); // whitespace block
+				// display error msg
 				if (eMsg != "") {
 					cout << "ERROR: " << eMsg << endl;
 				}
 				cout << "Input Matrix:" << endl;
+				// print matrix with the cell target to be highlighted.
 				mat->PrintMatrix(r, c, COLOR_INPUT);
+				// input
 				try {
 					cout << "Input Value for M(" << r + 1 << ", " << c + 1 << "): ";
 					mat->SetValue(r, c, GetDouble());
+					// if it is successful, we break out of the loop.
 					break;
 				}
 				catch (exception e){
+					// if the input is invalid, we continue the loop.
 					eMsg = "Invalid input.";
 					continue;
 				}
@@ -463,6 +496,7 @@ Matrix* Algorithm::InputMatrix(int rowSize, int columnSize, bool augmented) {
 	return mat;
 }
 
+// checks if the number is negative
 bool IsNegative(double num) {
 	return num < 0;
 }
@@ -471,15 +505,23 @@ SolutionSet* SolutionSet::Parse(Matrix* srcMatrix) {
 	if (!srcMatrix->IsAugmented) throw new algo_exception(8, "Matrix is not augmented.");
 	SolutionSet* ret = new SolutionSet();
 	ret->_sType = SolutionType::UniqueSolution;
-	// Do stuff.
+	// for each row, we parse it as a linear equation
 	for (int r = 0; r < srcMatrix->GetRows(); ++r) {
+		// this is the "x-sub" definition, -1 denotes no definition
 		int definition = -1;
+		// if the equation has a non-constant value, aside from the definition
 		bool hasNonConst = false;
+		// if the equation has a constant, and it is non-zero.
 		bool nonZeroConst = srcMatrix->GetValue(r, srcMatrix->GetColumns() - 1) != 0;
+		// if the equation has all zero coefficients
 		bool allZero = true;
+		// inital parse
 		bool initial = true;
+		// buffer to write definition
 		stringstream ss;
+		// for each coefficient
 		for (int c = 0; c < srcMatrix->GetColumns() - 1; ++c) {
+			// we check if it is non-zero
 			if (srcMatrix->GetValue(r, c) != 0)
 			{
 				allZero = false;
@@ -490,14 +532,19 @@ SolutionSet* SolutionSet::Parse(Matrix* srcMatrix) {
 					ss << "X" << c + 1 << " =";
 				}
 				else {
+					//we already have a definition, so this is a dependent variable
 					hasNonConst = true;
-					//this is a dep var
+					// this is a dep var
+					// if this is our first dep var
 					if (initial) {
 						initial = false;
+						// we write it directly with no left-hand operator
 						ss << " " << -srcMatrix->GetValue(r, c) << "(X" << c + 1 << ")";
 					}
 					else
-					{
+					{ // this is not the first dep var
+						// so we write a left-hand operator
+						// based on the sign of the coefficient
 						if (IsNegative(srcMatrix->GetValue(r, c))) {
 							// write addition
 							ss << " + " << abs(srcMatrix->GetValue(r, c)) << "(X" << c + 1 << ")";
@@ -510,16 +557,23 @@ SolutionSet* SolutionSet::Parse(Matrix* srcMatrix) {
 				}
 			}
 		}
+		// we check if the equation is all-zero, we also check the constant is non-zero
 		if (nonZeroConst && allZero) {
+			// if the constant has all zero coefficients and a non-zero constant,
+			// then the system has no solution since this equation has a contradicition
 			ret->_sType = SolutionType::NoSolution;
 			ss.clear();
 			ret->_vars.clear();
 			break;
 		}
+		// if we have a definition for this "x-sub"
 		if (definition > -1)
 		{
+			// and that we have dependent vars
 			if (hasNonConst) {
+				// this means we have many solution to the system
 				ret->_sType = SolutionType::ManySolution;
+				// we write the constant, if it is zero, then skip
 				if (srcMatrix->GetValue(r, srcMatrix->GetColumns() - 1) != 0) {
 					if (IsNegative(srcMatrix->GetValue(r, srcMatrix->GetColumns() - 1))) {
 						// write subtraction
@@ -532,14 +586,19 @@ SolutionSet* SolutionSet::Parse(Matrix* srcMatrix) {
 				}
 			}
 			else {
+				// the system has a unique solution
+				// we write the constant as-is.
 				ss << " " << srcMatrix->GetValue(r, srcMatrix->GetColumns() - 1);
 			}
+			// if the buffer contains data for this equation, store it to our solutionset.
 			if (ss.str().length() > 0) ret->_vars.push_back(ss.str());
 		}
 	}
 	return ret;
 }
+
 void SolutionSet::Print() {
+	// print solution type
 	switch (_sType) {
 		case SolutionType::NoSolution:
 			cout << "Solution Type:\n\t-NO SOLUTION-\n" << endl;
@@ -554,10 +613,15 @@ void SolutionSet::Print() {
 			cout << "Solution Set:" << endl;
 			break;
 	}
+	// print each definition
 	for (int e = 0; e < _vars.size(); ++e) {
 		cout << "\t" << _vars[e] << endl;
 	}
 }
+
+// NOTE: the functions ending with -ex are the same as those defined in SLE-OOP.cpp
+//		 for some reason, dependency errors arise if those are used.
+//		 could be fixed if we were to use another header file for SLE-OOP.cpp
 
 void PrintCenteredex(string text, int lineWidth) {
 	if (text.length() > lineWidth) {
@@ -584,6 +648,10 @@ int GetIntex() {
 	catch (exception ex) {}
 	return r;
 }
+
+// Change setting menu
+// This is defined here as the flags cannot be access outside this class/file.
+// Even if it were to be defined as static, errors still arise.
 void Algorithm::ChangeSettings(bool* pS, int pL) {
 	bool retu;
 	int choice;

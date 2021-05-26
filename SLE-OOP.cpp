@@ -1,7 +1,6 @@
 #include <iostream>
 #include <string>
 #include <sstream>
-#include <stdlib.h>
 
 #include "Matrix.h"
 #include "Algorithm.h"
