@@ -7,7 +7,7 @@
 
 using namespace std;
 
-// aux
+// aux functions
 string GetString() {
 	string temp = "";
 	getline(cin, temp);
@@ -30,6 +30,7 @@ int GetInt() {
 	catch (exception ex) {}
 	return r;
 }
+// splits a string into a vector list, with spaces as a seperator
 vector<string>* Split(string text) {
 	vector<string>* ret = new vector<string>();
 	stringstream stringBuilder;
@@ -50,6 +51,8 @@ vector<string>* Split(string text) {
 	}
 	return ret;
 }
+
+// prints and formats a string into a fixed width paragraph.
 void PrintParagraph(string text, int max_width) {
 	vector<string>* spl = Split(text);
 	for (int r = 0, w = 0; r < spl->size(); ++r) {
@@ -71,6 +74,8 @@ void PrintParagraph(string text, int max_width) {
 	}
 	delete spl;
 }
+
+// prints a string into a centered line.
 void PrintCentered(string text, int lineWidth) {
 	if (text.length() > lineWidth) {
 		cout << text.substr(0, lineWidth);
@@ -81,10 +86,14 @@ void PrintCentered(string text, int lineWidth) {
 	cout << text;
 	cout << endl;
 }
+
+// pauses the console by requesting the user for input
 void CPause(string text = "Press enter to continue.") {
 	if (text != "") cout << text;
 	GetString();
 }
+
+// prints the menu title
 void PrintTitle() {
 	
 	cout << " __              _                                   __     __   _" << endl;
@@ -102,24 +111,33 @@ void PrintTitle() {
 	
 }
 
+// the main entry point of the application.
 int main()
 {
+	// the paragraph length
 	const int paraLength = 92;
+	// current menu choice
 	int choice;
-	char ans;
 
+	// the user-inputted matrix
 	Matrix* mat = NULL;
+	// the result matrix from the solving algorithm
 	Matrix* result = NULL;
+	// the solution set generated from the parser
 	SolutionSet* set = NULL;
+	// flag that specifies whether to print steps or not
 	bool print = true;
-	bool retu = false;
+	// the matrix size: n = rows, m = columns.
 	int n = 0, m = 0;
 
+	// function that sets the max decimals by the format_cell function
 	set_max_decimal(6);
+
 	cout << boolalpha;
 
 	do
 	{
+		// display menu
 		system("CLS");
 		PrintTitle();
 		cout << endl;
@@ -133,10 +151,12 @@ int main()
 		cout << "Input: ";
 		choice = GetInt();
 		system("CLS");
+		// consider user choice
 		switch (choice)
 		{
 			case 1:
 				while (true) {
+					// input matrix size
 					cout << "Input augmented matrix size:" << endl;
 					cout << "Rows: ";
 					n = GetInt();
@@ -154,8 +174,11 @@ int main()
 				}
 				system("cls");
 				try {
+					// populate matrix
 					mat = Algorithm::InputMatrix(n, m, true);
+					// solve system
 					result = Algorithm::Solve(mat, print);
+					// parse results
 					set = SolutionSet::Parse(result);
 					set->Print();
 				}
@@ -169,9 +192,11 @@ int main()
 				delete mat, result, set;
 				continue;
 			case 2:
+				// change settings
 				Algorithm::ChangeSettings(&print, paraLength);
 				continue;
 			case 3:
+				// print about algo
 				PrintCentered("About Algorithm", paraLength);
 				cout << generate_repitition(paraLength, '-') << endl;
 				PrintParagraph("Row reduction is the process of performing row operations to transform any matrix into reduced row echelon form. In reduced row echelon form, each successive row of the matrix has less dependencies than the previous, so solving systems of equations is a much easier task. The idea behind row reduction is to convert the matrix into an equivalent version in order to simplify certain matrix computations. Its two main purposes are to solve system of linear equations and calculate the inverse of a matrix.", paraLength);
@@ -179,12 +204,14 @@ int main()
 				CPause();
 				continue;
 			case 4:
+				// print about program
 				PrintCentered("About Program", paraLength);
 				cout << generate_repitition(paraLength, '-') << endl;
 				PrintParagraph("This program is a tool written to help visualize the process on using the Gauss-Jordan Algorithm to solve a linear system. It visualizes the step-by-step process on each row operation and shows how each row operation affects the linear system.", paraLength);
 				cout << endl;
 				cout << endl;
-				cout << "Written By:\n\tCrisang, Lance Daniel\n\tGutierrez, Rommel\n\tFlorido, Noel";
+				cout << "Written By:\n\tCrisang, Lance Daniel\n\tGutierrez, Rommel\n\tFlorido, Noel\n\n";
+				cout << "Version: 1.0 (Built: 5-27-2021)";
 				cout << endl << endl;
 				CPause();
 				continue;

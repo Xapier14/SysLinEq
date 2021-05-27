@@ -460,7 +460,7 @@ double GetDouble() {
 	return r;
 }
 
-// Creates a matrix and requests the user for values
+// Creates a matrix and requests input from the user for values
 Matrix* Algorithm::InputMatrix(int rowSize, int columnSize, bool augmented) {
 	// Our matrix
 	Matrix* mat = new Matrix(rowSize, columnSize, augmented);
@@ -525,7 +525,7 @@ SolutionSet* SolutionSet::Parse(Matrix* srcMatrix) {
 			if (srcMatrix->GetValue(r, c) != 0)
 			{
 				allZero = false;
-				// we dont have a definition yet,
+				// if we dont have a definition yet,
 				if (definition < 0) {
 					//this will be our indep var
 					definition = c;
@@ -534,7 +534,7 @@ SolutionSet* SolutionSet::Parse(Matrix* srcMatrix) {
 				else {
 					//we already have a definition, so this is a dependent variable
 					hasNonConst = true;
-					// this is a dep var
+
 					// if this is our first dep var
 					if (initial) {
 						initial = false;
@@ -571,7 +571,7 @@ SolutionSet* SolutionSet::Parse(Matrix* srcMatrix) {
 		{
 			// and that we have dependent vars
 			if (hasNonConst) {
-				// this means we have many solution to the system
+				// this means we have many solutions to the system
 				ret->_sType = SolutionType::ManySolution;
 				// we write the constant, if it is zero, then skip
 				if (srcMatrix->GetValue(r, srcMatrix->GetColumns() - 1) != 0) {

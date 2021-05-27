@@ -254,7 +254,7 @@ Matrix::~Matrix() {
 	}
 	*/
 }
-
+// copy ctr
 Matrix::Matrix(const Matrix& src) {
 
 	// NOTE: the code below was copy-pasted from the constructor above (excluding size checks).
@@ -404,13 +404,6 @@ vector<string> Matrix::FormatString() {
 	return ret;
 }
 
-/*
-void Matrix::PrintMatrix() {
-	vector<string> r = FormatString();
-	for (int i = 0; i < r.size(); ++i) cout << r[i] << endl;
-}
-*/
-
 Matrix* Matrix::CreateMatrix(int rows, int columns, bool isAugmented) {
 	Matrix* ret = new Matrix(rows, columns, isAugmented);
 	ret->Repoint();
@@ -484,11 +477,10 @@ void Matrix::AddRow(int baseRow, int additiveRow, bool inverseAdditive, double s
 }
 
 void Matrix::PrintMatrix(int hRow, int hCol, int color, int hARow, int hACol, int aColor) {
-	// cout handle
-
 	// char styling
 	// ul = ┌, dl = └, ur = ┐, dr = ┘, as = │
 	char ul = 218, dl = 192, ur = 191, dr = 217, as = 179;
+	// cs = character seperator, ds = divider seperator
 	char cs = ' ', ds = 179;
 
 	// get common cell width
@@ -515,9 +507,11 @@ void Matrix::PrintMatrix(int hRow, int hCol, int color, int hARow, int hACol, in
 	int lineLength = 0;
 	int cellLength = w + MAX_DECIMALS + 1;
 	if (IsAugmented) {
+		// The augmented length formula
 		lineLength = (cellLength * _columns) + (2 * (_columns - 2)) + 8;
 	}
 	else {
+		// The non-augmented length formula
 		lineLength = (cellLength * _columns) + (2 * (_columns - 1)) + 4;
 	}
 	// Account for character corners
